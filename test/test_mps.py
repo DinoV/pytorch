@@ -176,6 +176,8 @@ def mps_ops_grad_modifier(ops):
         'nn.functional.conv_transpose1d': [torch.float16],
         'nn.functional.conv_transpose2d': [torch.float16],
         'nn.functional.conv_transpose3d': [torch.float16],
+        # input types 'tensor<1x3x9x9xf16>' and 'tensor<1xf32>' are not broadcast compatible
+        'nn.functional.avg_pool2d': [torch.float16],
     }
 
     MACOS_13_3_XFAILLIST_GRAD = {
@@ -580,6 +582,7 @@ def mps_ops_modifier(ops):
         'nn.functional.max_unpool1dgrad': None,
         'nn.functional.max_unpool2dgrad': None,
         'nn.functional.max_unpool3dgrad': None,
+        'nn.functional.avg_pool2d': [torch.float16],
         'nn.functional.avg_pool3d': None,
         'nn.functional.ctc_loss': None,
         'nn.functional.embedding_bag': None,
@@ -10966,7 +10969,8 @@ class TestConsistency(TestCaseMPS):
             # for tensor_split(), the second tensor arg ("tensor_indices_or_sections") must be on CPU only
             if op.name == "tensor_split" and isinstance(mps_args[1], torch.Tensor):
                 mps_args[1] = cpu_args[1]
-
+            print("mps_args: ", mps_args)
+            print("mps_kwargs: ", mps_kwargs)
             cpu_out = op(*cpu_args, **cpu_kwargs)
             mps_out = op(*mps_args, **mps_kwargs)
 
