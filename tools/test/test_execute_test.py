@@ -158,6 +158,7 @@ class TestExecuteTest(unittest.TestCase):
             run1 & run2, ExecuteTest("foo", excluded=["bar", "baz", "car"])
         )
 
+
 class TestShardedTest(unittest.TestCase):
     def test_get_pytest_args(self) -> None:
         test = ExecuteTest("foo", included=["bar", "baz"])
@@ -166,6 +167,7 @@ class TestShardedTest(unittest.TestCase):
         expected_args = ["-k", "bar or baz"]
 
         self.assertListEqual(sharded_test.get_pytest_args(), expected_args)
+
 
 if __name__ == "__main__":
     unittest.main()
