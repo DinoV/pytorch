@@ -1,7 +1,9 @@
 #include <c10/util/Backtrace.h>
+#include <c10/util/env.h>
 #include <cstdlib>
 #include <exception>
 #include <iostream>
+#include <mutex>
 
 namespace c10 {
 class AbortHandlerHelper {
@@ -15,6 +17,7 @@ class AbortHandlerHelper {
   }
 
   void set(std::terminate_handler handler) {
+    std::lock_guard<std::mutex> lk(mutex);
     if (!inited) {
       prev = std::set_terminate(handler);
       curr = std::get_terminate();
@@ -22,7 +25,7 @@ class AbortHandlerHelper {
     }
   }
 
-  std::terminate_handler getPrev() {
+  std::terminate_handler getPrev() const {
     return prev;
   }
 
@@ -30,6 +33,7 @@ class AbortHandlerHelper {
   std::terminate_handler prev = nullptr;
   std::terminate_handler curr = nullptr;
   bool inited = false;
+  std::mutex mutex;
   AbortHandlerHelper() = default;
   ~AbortHandlerHelper() {
     // Only restore the handler if we are the current one
@@ -48,7 +52,7 @@ C10_ALWAYS_INLINE void terminate_handler() {
   std::cout << "Unhandled exception caught in c10/util/AbortHandler.h"
             << std::endl;
   auto backtrace = get_backtrace();
-  std::cout << backtrace << std::endl;
+  std::cout << backtrace << std::endl << std::flush;
   auto prev_handler = AbortHandlerHelper::getInstance().getPrev();
   if (prev_handler) {
     prev_handler();
@@ -60,20 +64,14 @@ C10_ALWAYS_INLINE void terminate_handler() {
 
 C10_ALWAYS_INLINE void set_terminate_handler() {
   bool use_custom_terminate = false;
+  // On Windows its enabled by default based on https://github.com/pytorch/pytorch/pull/50320#issuecomment-763147062
 #ifdef _WIN32
   use_custom_terminate = true;
 #endif // _WIN32
-  const char* value_str = std::getenv("USE_CUSTOM_TERMINATE");
-  std::string value{value_str != nullptr ? value_str : ""};
-  if (!value.empty()) {
-    use_custom_terminate = false;
-    std::transform(
-        value.begin(), value.end(), value.begin(), [](unsigned char c) {
-          return toupper(c);
-        });
-    if (value == "1" || value == "ON") {
-      use_custom_terminate = true;
-    }
+  auto result = c10::utils::check_env("USE_CUSTOM_TERMINATE");
+  if(result != c10::nullopt) {
+    use_custom_terminate = result.value();
+    std::cout << use_custom_terminate << "\n";
   }
   if (use_custom_terminate) {
     AbortHandlerHelper::getInstance().set(detail::terminate_handler);

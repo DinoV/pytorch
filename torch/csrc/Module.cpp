@@ -222,11 +222,10 @@ static PyObject* THPModule_crashIfATenASAN(PyObject* module, PyObject* arg) {
   return THPUtils_packInt32(at::_crash_if_asan(THPUtils_unpackInt(arg)));
 }
 
-static PyObject* THPModule_crashImmediately(
+static PyObject* THPModule_abort(
     PyObject* module,
     PyObject* noargs) {
-  throw std::runtime_error(
-      "Emulate uncaught exception that leads to the crash");
+  std::terminate();
   Py_RETURN_NONE;
 }
 
@@ -1043,7 +1042,7 @@ static PyMethodDef TorchMethods[] = { // NOLINT
      nullptr},
     {"_set_default_dtype", THPModule_setDefaultDtype, METH_O, nullptr},
     {"_infer_size", THPModule_inferSize, METH_VARARGS, nullptr},
-    {"_crash_immediately", THPModule_crashImmediately, METH_NOARGS, nullptr},
+    {"_abort", THPModule_abort, METH_NOARGS, nullptr},
     {"_crash_if_csrc_asan", THPModule_crashIfCsrcASAN, METH_O, nullptr},
     {"_crash_if_csrc_ubsan", THPModule_crashIfCsrcUBSAN, METH_O, nullptr},
     {"_crash_if_vptr_ubsan", THPModule_crashIfvptrUBSAN, METH_NOARGS, nullptr},
