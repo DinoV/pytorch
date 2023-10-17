@@ -6,7 +6,7 @@ REPO_ROOT = pathlib.Path(__file__).resolve().parent.parent.parent
 try:
     # using tools/ to optimize test run.
     sys.path.append(str(REPO_ROOT))
-    from tools.testing.execute_test import ExecuteTest
+    from tools.testing.execute_test import ExecuteTest, ShardedTest
 except ModuleNotFoundError:
     print("Can't import required modules, exiting")
     sys.exit(1)
@@ -158,6 +158,14 @@ class TestExecuteTest(unittest.TestCase):
             run1 & run2, ExecuteTest("foo", excluded=["bar", "baz", "car"])
         )
 
+class TestShardedTest(unittest.TestCase):
+    def test_get_pytest_args(self) -> None:
+        test = ExecuteTest("foo", included=["bar", "baz"])
+        sharded_test = ShardedTest(test, 1, 1)
+
+        expected_args = ["-k", "bar or baz"]
+
+        self.assertListEqual(sharded_test.get_pytest_args(), expected_args)
 
 if __name__ == "__main__":
     unittest.main()

@@ -199,9 +199,9 @@ class ExecuteTest:
 
     def get_pytest_filter(self) -> str:
         if self._included:
-            return " or ".join(self._included)
+            return " or ".join(sorted(self._included))
         elif self._excluded:
-            return f"not ({' and '.join(self._excluded)})"
+            return f"not ({' and '.join(sorted(self._excluded))})"
         else:
             return ""
 
@@ -292,4 +292,4 @@ class ShardedTest:
         return self.time or 0
 
     def get_pytest_args(self) -> List[str]:
-        return ["-k", "TestC"]
+        return ["-k", self.test.get_pytest_filter()]
